@@ -1,0 +1,162 @@
+import math
+
+# ---------- Helper functions ----------
+
+def gcd_list(lst):
+    g = lst[0]
+    for val in lst[1:]:
+        g = math.gcd(g, val)
+    return g
+
+def verify_solution(A, x, y):
+    if A is None:
+        return False
+    return all(sum(A[i][j]*x[j] for j in range(len(x))) == y[i] for i in range(len(x)))
+
+# ---------- Main algorithm ----------
+
+def matrixsearch_triangular_greedy(x, y, C=None):
+    n = len(x)
+    if C is None:
+        k = max(abs(val) for val in x+y)
+        C = list(range(-k, k+1))
+    
+    # --- Early feasibility checks ---
+    gcd_x = gcd_list(x)
+    gcd_y = gcd_list(y)
+    if gcd_x != gcd_y:
+        print(f"Impossible: gcd(x) = {gcd_x} != gcd(y) = {gcd_y}")
+        return None
+    
+    # --- Helper to attempt one row ---
+    def try_row(i, target, indices, A, diag_sign):
+        diag = i
+        # Strategies 1,2,3
+        # Strategy 1
+        for j in indices:
+            if j == diag:
+                continue
+            for coef in C:
+                if diag_sign*x[diag] + coef*x[j] == target:
+                    A[i][diag] = diag_sign
+                    A[i][j] = coef
+                    return True
+        # Strategy 2
+        for j1 in indices:
+            if j1 == diag:
+                continue
+            for j2 in indices:
+                if j2 == diag or j2 <= j1:
+                    continue
+                for c1 in C:
+                    rest = target - diag_sign*x[diag] - c1*x[j1]
+                    for c2 in C:
+                        if c2*x[j2] == rest:
+                            A[i][diag] = diag_sign
+                            A[i][j1] = c1
+                            A[i][j2] = c2
+                            return True
+        # Strategy 3
+        for j1 in indices:
+            if j1 == diag:
+                continue
+            for j2 in indices:
+                if j2 == diag or j2 <= j1:
+                    continue
+                for j3 in indices:
+                    if j3 == diag or j3 <= j2:
+                        continue
+                    for c1 in C:
+                        for c2 in C:
+                            rest = target - diag_sign*x[diag] - c1*x[j1] - c2*x[j2]
+                            for c3 in C:
+                                if c3*x[j3] == rest:
+                                    A[i][diag] = diag_sign
+                                    A[i][j1] = c1
+                                    A[i][j2] = c2
+                                    A[i][j3] = c3
+                                    return True
+        # Greedy fallback
+        row = [0]*n
+        row[diag] = diag_sign
+        current_sum = diag_sign * x[diag]
+        cyclic_order = [j for j in indices if j != diag]
+        idx = 0
+        while current_sum != target and idx < len(cyclic_order):
+            j = cyclic_order[idx]
+            best_coef = min(C, key=lambda c: abs(target - (current_sum + c*x[j])))
+            row[j] = best_coef
+            current_sum += best_coef * x[j]
+            idx += 1
+        if current_sum == target:
+            for j in range(n):
+                A[i][j] = row[j]
+            return True
+        return False
+    
+    # --- Attempt full triangular matrix ---
+    def attempt(tri_type):
+        A = [[0]*n for _ in range(n)]
+        for i in range(n):
+            if tri_type == "upper":
+                indices = list(range(i, n))
+            else:
+                indices = list(range(0, i+1))
+            target = y[i]
+            # Early max-sum feasibility
+            max_sum_possible = sum(max(abs(c) for c in C)*abs(x[j]) for j in indices)
+            if abs(target) > max_sum_possible:
+                print(f"Impossible: y[{i}] = {target} trop grand pour {tri_type} triangulaire")
+                return None
+            # Try diag +1 first
+            if try_row(i, target, indices, A, +1):
+                continue
+            # Then diag -1
+            if try_row(i, target, indices, A, -1):
+                continue
+            print(f"Échec à la ligne {i} pour {tri_type} triangulaire")
+            return None
+        return A
+    
+    # Try upper first
+    A = attempt("upper")
+    if A:
+        return A
+    # Then lower
+    A = attempt("lower")
+    if A:
+        return A
+    
+    print("Impossible de construire une matrice triangulaire")
+    return None
+
+# ---------- User input ----------
+
+try:
+    print("Entrez les éléments du vecteur x séparés par des espaces:")
+    x = list(map(int, input().split()))
+
+    print("Entrez les éléments du vecteur y séparés par des espaces:")
+    y = list(map(int, input().split()))
+
+    if len(x) != len(y):
+        print("Erreur: Les vecteurs doivent avoir la même longueur!")
+        exit()
+
+    print("Entrez la valeur de k (pour générer C = {-k,..., k}):")
+    k = int(input())
+    C = list(range(-k, k+1))
+    print(f"Ensemble C généré: {C}")
+
+    A = matrixsearch_triangular_greedy(x, y, C)
+    if A:
+        print("\nMatrice A trouvée:")
+        for row in A:
+            print(row)
+        print("Vérification:", verify_solution(A, x, y))
+    else:
+        print("Aucune solution trouvée.")
+
+except ValueError:
+    print("Erreur: Veuillez entrer uniquement des nombres!")
+    exit()
