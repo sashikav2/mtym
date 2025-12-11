@@ -1,0 +1,87 @@
+def matrixsearch(x, y):
+    n = len(x)
+    A = [[0] * n for _ in range(n)]
+    
+    # Calcul des limites pour {-1, 0, 1}
+    max_sum = sum(abs(val) for val in x)
+    min_sum = -max_sum
+    
+    for i in range(n):
+        # Vérification de faisabilité
+        if y[i] > max_sum or y[i] < min_sum:
+            print(f"Erreur: y[{i}] = {y[i]} hors limites [{min_sum}, {max_sum}]")
+            return None
+        
+        current_sum = 0
+        target_sum = y[i]
+        
+        # Tri glouton par valeur absolue décroissante
+        indices = sorted(range(n), key=lambda j: -abs(x[j]))
+        
+        found_solution = False
+        # Essai de chaque point de départ
+        for start_idx in range(n):
+            current_sum = 0
+            row = [0] * n
+            
+            for k in range(n):
+                j = indices[(start_idx + k) % n]
+                
+                # module coef -1, 0, 1 
+                best_coef = 0
+                best_distance = abs(current_sum - target_sum)
+                
+                for coef in [-1, 0, 1]:
+                    new_sum = current_sum + coef * x[j]
+                    new_distance = abs(new_sum - target_sum)
+                    
+                    if new_distance < best_distance:
+                        best_distance = new_distance
+                        best_coef = coef
+                # fin de module
+                
+                row[j] = best_coef
+                current_sum += best_coef * x[j]
+                
+                if current_sum == target_sum:
+                    # Copier la solution trouvée
+                    for col in range(n):
+                        A[i][col] = row[col]
+                    found_solution = True
+                    break
+            
+            if found_solution:
+                break
+        
+        if not found_solution:
+            print(f"Erreur: Impossible d'atteindre y[{i}] = {y[i]}")
+            return None
+    
+    return A
+
+# Programme principal
+try:
+    print("Entrez les éléments du vecteur x séparés par des espaces:")
+    x_input = input().split()
+    x = list(map(int, x_input))
+    
+    print("Entrez les éléments du vecteur y séparés par des espaces:")
+    y_input = input().split()
+    y = list(map(int, y_input))
+    
+    if len(x) != len(y):
+        print("Erreur: Les vecteurs doivent avoir la même longueur!")
+        exit()
+    
+    A = matrixsearch(x, y)
+    
+    if A is None:
+        print("Aucune matrice possible!")
+    else:
+        print("\nMatrice A (coefficients: -1, 0, 1):")
+        for row in A:
+            print(row)
+
+except ValueError:
+    print("Erreur: Veuillez entrer seulement des nombres!")
+    exit()
