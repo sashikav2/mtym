@@ -1,0 +1,65 @@
+def matrixsearch_general(x, y):
+    n = len(x)
+    A = [[0]*n for _ in range(n)]
+
+    for i in range(n):
+        target = y[i]
+        found = False
+
+        # Try different starting points for cycling
+        for start in range(n):
+            row = [0]*n
+            remaining = target
+
+            # All indices are usable
+            cyclic_order = list(range(n))
+            cyclic_order = cyclic_order[start:] + cyclic_order[:start]
+            unused = set(cyclic_order)
+
+            # Greedy: pick index minimizing |remaining - x[j]|
+            while remaining != 0 and unused:
+                j = min(unused, key=lambda idx: abs(remaining - x[idx]))
+                row[j] = 1
+                remaining -= x[j]
+                unused.remove(j)
+
+            if remaining == 0:
+                A[i] = row[:]
+                found = True
+                break
+
+        if not found:
+            print(f"Impossible d'atteindre y[{i}] = {target}")
+            return None
+
+    return A
+
+def verify_solution(A, x, y):
+    if A is None: 
+        return False
+    return all(sum(A[i][j]*x[j] for j in range(len(x))) == y[i] for i in range(len(x)))
+
+# Main program
+try:
+    print("Entrez les éléments du vecteur x séparés par des espaces:")
+    x = list(map(int, input().split()))
+
+    print("Entrez les éléments du vecteur y séparés par des espaces:")
+    y = list(map(int, input().split()))
+
+    if len(x) != len(y):
+        print("Erreur: Les vecteurs doivent avoir la même longueur!")
+        exit()
+
+    A = matrixsearch_general(x, y)
+    if A:
+        print("\nMatrice A:")
+        for row in A:
+            print(row)
+        print(" Vérification:", verify_solution(A, x, y))
+    else:
+        print("Impossible de construire la matrice.")
+
+except ValueError:
+    print("Erreur: Veuillez entrer uniquement des nombres!")
+    exit()
