@@ -1,0 +1,170 @@
+def matrixsearch(x, y, C):
+    n = len(x)
+    A = [[0] * n for _ in range(n)]
+    
+    # Early termination using Bézout's identity
+    def compute_gcd(a, b):
+        while b:
+            a, b = b, a % b
+        return abs(a)
+    
+    x_gcd = x[0]
+    for i in range(1, n):
+        x_gcd = compute_gcd(x_gcd, x[i])
+    
+    for i in range(n):
+        if y[i] % x_gcd != 0:
+            print(f"impossible: GCD({x}) = {x_gcd} ne divise pas y[{i}] = {y[i]}")
+            return None
+    
+    # Sort coefficients by usefulness
+    C_sorted = sorted(C, key=lambda c: -abs(c))
+    
+    # Precompute all possible single-element contributions
+    element_contributions = []
+    for j in range(n):
+        contributions = {}
+        for coef in C_sorted:
+            contributions[coef * x[j]] = coef
+        element_contributions.append(contributions)
+    
+    # Solve each row independently
+    for i in range(n):
+        target = y[i]
+        found = False
+        
+        # Strategy 1: Try exact matches with 1 element
+        for j in range(n):
+            if target in element_contributions[j]:
+                row = [0] * n
+                row[j] = element_contributions[j][target]
+                A[i] = row
+                found = True
+                break
+        
+        if not found:
+            # Strategy 2: Try pairs of elements
+            for j1 in range(n):
+                for j2 in range(j1 + 1, n):
+                    for contrib1, coef1 in element_contributions[j1].items():
+                        needed = target - contrib1
+                        if needed in element_contributions[j2]:
+                            row = [0] * n
+                            row[j1] = coef1
+                            row[j2] = element_contributions[j2][needed]
+                            A[i] = row
+                            found = True
+                            break
+                    if found:
+                        break
+                if found:
+                    break
+        
+        if not found:
+            # === NEW: Strategy 3: Try triplets of elements ===
+            for j1 in range(n):
+                for j2 in range(j1 + 1, n):
+                    for j3 in range(j2 + 1, n):
+                        for contrib1, coef1 in element_contributions[j1].items():
+                            remaining1 = target - contrib1
+                            for contrib2, coef2 in element_contributions[j2].items():
+                                remaining2 = remaining1 - contrib2
+                                if remaining2 in element_contributions[j3]:
+                                    row = [0] * n
+                                    row[j1] = coef1
+                                    row[j2] = coef2
+                                    row[j3] = element_contributions[j3][remaining2]
+                                    A[i] = row
+                                    found = True
+                                    break
+                            if found:
+                                break
+                        if found:
+                            break
+                    if found:
+                        break
+                if found:
+                    break
+        
+        if not found:
+            # Strategy 4: Greedy approach for the row
+            row = solve_single_row(x, target, C_sorted)
+            if row is not None:
+                A[i] = row
+                found = True
+        
+        if not found:
+            print(f"Erreur: Impossible d'atteindre y[{i}] = {y[i]}")
+            return None
+    
+    return A
+
+def solve_single_row(x, target, C_sorted):
+    """Solve one row using greedy approach"""
+    n = len(x)
+    row = [0] * n
+    current_sum = 0
+    
+    # Process elements by potential impact
+    indices = sorted(range(n), key=lambda j: -abs(x[j]))
+    
+    for j in indices:
+        if current_sum == target:
+            break
+            
+        best_coef = 0
+        best_error = abs(target - current_sum)
+        
+        for coef in C_sorted:
+            new_sum = current_sum + coef * x[j]
+            error = abs(target - new_sum)
+            
+            if error < best_error:
+                best_error = error
+                best_coef = coef
+            elif error == 0:
+                best_coef = coef
+                break
+        
+        row[j] = best_coef
+        current_sum += best_coef * x[j]
+    
+    return row if current_sum == target else None
+
+# PROGRAMME PRINCIPAL
+try:
+    print("Entrez les éléments du vecteur x séparés par des espaces:")
+    x_input = input().split()
+    x = list(map(int, x_input))
+    
+    print("Entrez les éléments du vecteur y séparés par des espaces:")
+    y_input = input().split()
+    y = list(map(int, y_input))
+    
+    print("Entrez la valeur de k (pour générer C = {-k,..., k}):")
+    k = int(input())
+    C = list(range(-k, k+1))
+    print(f"Ensemble C généré: {C}")
+    
+    if len(x) != len(y):
+        print("Erreur: Les vecteurs doivent avoir la même longueur!")
+        exit()
+    
+    A = matrixsearch(x, y, C)
+    
+    if A is None:
+        print("Aucune matrice exacte possible!")
+    else:
+        print("\nMatrice A trouvée:")
+        for row in A:
+            print(row)
+        
+        print("\nVérification (A*x = y):")
+        for i in range(len(A)):
+            result = sum(A[i][j] * x[j] for j in range(len(x)))
+            status = "✓ EXACT" if result == y[i] else "✗ ERREUR"
+            print(f"Ligne {i}: {A[i]} * {x} = {result} (cible: {y[i]}) {status}")
+
+except ValueError:
+    print("Erreur: Veuillez entrer seulement des nombres!")
+    exit()
