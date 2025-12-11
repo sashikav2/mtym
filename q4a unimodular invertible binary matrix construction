@@ -1,0 +1,75 @@
+def unimodular_matrix_search(x, y, triangular_type='upper'):
+    n = len(x)
+    A = [[0] * n for _ in range(n)]
+
+    for i in range(n):
+        target = y[i]
+
+        if triangular_type == 'upper':
+            indices = list(range(i, n))
+        else:
+            indices = list(range(0, i + 1))
+
+        diagonal = i
+        diagonal_value = x[diagonal]
+        found = False
+
+        for start in range(len(indices)):
+            row = [0] * n
+            row[diagonal] = 1
+            remaining = target - diagonal_value
+
+            off_diag_indices = [idx for idx in indices if idx != diagonal]
+            cyclic_order = off_diag_indices[start:] + off_diag_indices[:start]
+            unused = set(cyclic_order)
+
+            while remaining != 0 and unused:
+                j = min(unused, key=lambda idx: abs(remaining - x[idx]))
+                row[j] = 1
+                remaining -= x[j]
+                unused.remove(j)
+
+            if remaining == 0:
+                A[i] = row[:]
+                found = True
+                break
+
+        if not found:
+            print(f"Impossible d'atteindre y[{i}] = {target} en {triangular_type}")
+            return None
+
+    return A
+
+
+def verify_solution(A, x, y):
+    if A is None:
+        return False
+    return all(sum(A[i][j] * x[j] for j in range(len(x))) == y[i] for i in range(len(x)))
+
+
+try:
+    print("Entrez les éléments du vecteur x séparés par des espaces:")
+    x = list(map(int, input().split()))
+
+    print("Entrez les éléments du vecteur y séparés par des espaces:")
+    y = list(map(int, input().split()))
+
+    if len(x) != len(y):
+        exit()
+
+    print("\n--- Essai de construction triangulaire supérieure ---")
+    A_upper = unimodular_matrix_search(x, y, 'upper')
+    if A_upper:
+        for row in A_upper:
+            print(row)
+        print(verify_solution(A_upper, x, y))
+
+    print("\n--- Essai de construction triangulaire inférieure ---")
+    A_lower = unimodular_matrix_search(x, y, 'lower')
+    if A_lower:
+        for row in A_lower:
+            print(row)
+        print(verify_solution(A_lower, x, y))
+
+except ValueError:
+    exit()
