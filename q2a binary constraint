@@ -1,12 +1,21 @@
 def matrixsearch_general(x, y):
+    """
+    Greedy + cyclic algorithm to find binary square matrix A such that A*x = y
+    Each row i is a subset sum of x equal to y[i]. Supports negative numbers.
+    """
     n = len(x)
-    m = len(y)
-    A = [[0]*n for _ in range(m)]
+
+    # Check that y has the same length as x
+    if len(y) != n:
+        print(f"Erreur: impossible de construire une matrice carrée car len(x) != len(y) ({n} != {len(y)})")
+        return None
+
+    A = [[0]*n for _ in range(n)]
 
     # Indices sorted by descending absolute value
     indices = sorted(range(n), key=lambda j: -abs(x[j]))
 
-    for i in range(m):
+    for i in range(n):
         target = y[i]
 
         # --- Special case: target = 0 ---
@@ -56,9 +65,10 @@ def matrixsearch_general(x, y):
 def verify_solution(A, x, y):
     if A is None:
         return False
+    n = len(x)
     return all(
-        sum(A[i][j]*x[j] for j in range(len(x))) == y[i]
-        for i in range(len(y))
+        sum(A[i][j]*x[j] for j in range(n)) == y[i]
+        for i in range(n)
     )
 
 
