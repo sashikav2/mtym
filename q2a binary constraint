@@ -1,8 +1,5 @@
 def matrixsearch_general(x, y):
-    """
-    Greedy + cyclic algorithm to find binary square matrix A such that A*x = y
-    Each row i is a subset sum of x equal to y[i]. Supports negative numbers.
-    """
+ 
     n = len(x)
 
     # Check that y has the same length as x
